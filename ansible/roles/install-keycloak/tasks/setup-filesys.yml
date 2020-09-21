@@ -1,0 +1,30 @@
+- name: Create directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: 0755
+  with_items:
+    - /data/keycloak/postgres
+    - /data/compose-configs/keycloak
+
+- name: Copy docker-compose
+  template:
+    src: templates/docker-compose.yml.j2
+    dest: /data/compose-configs/keycloak/docker-compose.yml
+
+- name: Copy nginx-config for keycloak
+  template:
+    src: templates/keycloak.conf.j2
+    dest: /data/web/conf.d/keycloak.conf
+
+- name: copy script to create KC users
+  template:
+    src: templates/configure-kc.sh.j2
+    dest: /root/configure-kc.sh
+    mode: 0755
+
+- name: copy realm config
+  template:
+    src: templates/realm-export.json.j2
+    dest: /root/realm-export.json
+    mode: 0644

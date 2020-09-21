@@ -1,0 +1,14 @@
+export PATH=$PATH:$JBOSS_HOME/bin
+# authenticate to kc API
+kcadm.sh config credentials --server http://localhost:8080/auth --realm master --user {{ keycloak_admin_user }} --password {{ keycloak_admin_pass }}
+# creating ormicloud realm
+kcadm.sh create realms -f /tmp/realm-export.json
+# create sso admin user
+kcadm.sh create users -r ormicloud -s username=admin -s enabled=true
+kcadm.sh set-password -r ormicloud --username admin --new-password {{ sso_admin_pass }}
+kcadm.sh add-roles --uusername admin --rolename admin -r ormicloud
+kcadm.sh add-roles -r ormicloud --uusername admin --cclientid nextcloud --rolename admin 
+# update client secret in Clients> nextcloud> credentials
+kcadm.sh create clients/663256911-39a2-47o6-815a-b2h470d1800/client-secret -r ormicloud
+# get new secret
+kcadm.sh get clients/663256911-39a2-47o6-815a-b2h470d1800/client-secret -r ormicloud --fields value > /tmp/client-secret-kc.json

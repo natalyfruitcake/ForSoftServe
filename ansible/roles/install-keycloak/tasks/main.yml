@@ -1,0 +1,7 @@
+---
+# tasks file for keycloak
+- include_tasks: set-passwords.yml
+- include_tasks: setup-filesys.yml
+- include_tasks: start-keycloak.yml
+- include_tasks: save_token.yml
+  when: enable_sso | bool

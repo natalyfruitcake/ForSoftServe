@@ -1,0 +1,7 @@
+---
+# defaults file for keycloak
+k_postgres_user: keycloak
+k_postgres_db: keycloak_db
+random_db_password: "{{ lookup('password', '/dev/null length=15 chars=ascii_letters') }}"
+keycloak_admin_user: superadmin 
+keycloak_docker_image: jboss/keycloak

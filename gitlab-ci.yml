@@ -1,0 +1,78 @@
+stages:
+  - build
+  - stage
+  - deploy
+
+Build and Deploy dev SocialSharing:
+  environment:
+    name: development
+  only:
+    refs:
+      - development
+  stage: build
+  script:
+    - dotnet-2.2 publish SocialSharing/SocialSharing.csproj -c Development -o out/
+    - rm -rf SocialSharing/out/appsettings.Staging.json
+    - rm -rf SocialSharing/out/appsettings.Production.json
+    - rm -rf SocialSharing/out/*.pdb 
+    - cd SocialSharing/out/
+    - mkdir -p ~/.ssh
+    - eval "$(ssh-agent -s)"
+    - echo "$Development_key" | tr -d '\r' | ssh-add - > /dev/null
+    - chmod 744 ~/.ssh
+    - scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -r * username@domain.org:/var/www/appname.social-sharing-mvc.ui
+    - ssh -oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null username@domain.org "sudo service appname.social-sharing-mvc.ui restart"
+    
+Build and Deploy stage SocialSharing:
+  environment:
+    name: staging
+  only:
+    refs:
+        - stage
+  stage: stage
+  script:
+    - dotnet-2.2 publish SocialSharing/SocialSharing.csproj -c Staging -o out/
+    - rm -rf SocialSharing/out/appsettings.Development.json
+    - rm -rf SocialSharing/out/appsettings.Production.json
+    - rm -rf SocialSharing/out/*.pdb 
+    - cd SocialSharing/out/
+    - mkdir -p ~/.ssh
+    - eval "$(ssh-agent -s)"
+    - echo "$Development_key" | tr -d '\r' | ssh-add - > /dev/null
+    - chmod 744 ~/.ssh
+    - scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -r * username@domain2.com:/var/www/appname.social-sharing-mvc.ui
+    - ssh -oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null username@domain2.com "sudo service appname.social-sharing-mvc.ui restart"
+ 
+Build prod SocialSharing:
+  environment:
+    name: production
+  only:
+    refs:
+        - master
+  stage: build
+  artifacts:
+    paths: 
+     - SocialSharing/out/
+    expire_in: 30m 
+  script:
+    - dotnet-2.2 publish SocialSharing/SocialSharing.csproj -c Production -o out/
+    - rm -rf SocialSharing/out/appsettings.Staging.json
+    - rm -rf SocialSharing/out/appsettings.Development.json
+    - rm -rf SocialSharing/out/*.pdb 
+Deploy prod SocialSharing:
+  only:
+    refs:
+       - master 
+  environment:
+    name: production
+  stage: deploy
+  dependencies:
+    - Build prod SocialSharing
+  script:
+    - cd SocialSharing/out/
+    - mkdir -p ~/.ssh
+    - eval "$(ssh-agent -s)"
+    - echo "$Development_key" | tr -d '\r' | ssh-add - > /dev/null
+    - chmod 744 ~/.ssh
+    - scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -r * username@domain3.global:/var/www/production/appname.social-sharing-mvc.ui
+    - ssh -oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null username@domain3.global "sudo service appname.social-sharing-mvc.ui restart" 

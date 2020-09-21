@@ -1,0 +1,32 @@
+- name: Start keycloak and DB
+  docker_compose:    
+    project_src: /data/compose-configs/keycloak
+  register: output
+
+- debug:
+    var: output
+
+- name: Wait for keycloak
+  shell: sleep 60
+
+- name: Add nginx-proxy to keycloak network
+  shell: docker network connect keycloak_keycloaknet nginx-proxy
+  register: connect_network
+
+- debug:
+    var: connect_network
+
+- name: copy realm config
+  shell: docker cp /root/realm-export.json keycloak_server:/tmp/realm-export.json
+
+- name: copy script to setup KC
+  shell: docker cp /root/configure-kc.sh keycloak_server:/tmp/configure-kc.sh
+
+- name: execute script to setup KC
+  shell: docker exec keycloak_server bash /tmp/configure-kc.sh
+
+- name: Restart nginx and KC
+  shell: docker restart keycloak_server nginx-proxy 
+
+
+  

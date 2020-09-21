@@ -1,0 +1,21 @@
+   
+- name: check that KC token saved to host
+  stat:
+    path: /root/.client_secret
+  register: kc_token_file
+
+- name: copy new client secret for NC from KC container to host
+  shell: |
+    docker cp keycloak_server:/tmp/client-secret-kc.json /root/client-secret-kc.json
+    cat client-secret-kc.json | python -c 'import json,sys;obj=json.load(sys.stdin);print obj["value"]' > /root/.client_secret
+    chmod 600 /root/.client_secret
+    rm -f /root/client-secret-kc.json
+  when: not kc_token_file.stat.exists
+
+- name: Read KC client secret
+  shell: cat /root/.client_secret
+  register: client_secret_cat
+  
+- name: Set kc_client_secret
+  set_fact:
+    kc_client_secret: "{{ client_secret_cat.stdout }}"
